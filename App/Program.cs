@@ -11,6 +11,8 @@ builder.Services.AddHttpClient("GitHub", client =>
     client.DefaultRequestHeaders.Add("User-Agent", "HttpClientFactoryExample");
 });
 
+builder.Services.AddScoped<IGithubService, GithubService>();
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
