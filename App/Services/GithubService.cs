@@ -31,7 +31,7 @@ namespace App.Services
 
             return await _retryPolicy.ExecuteAsync(async () =>
             {
-                if (rnd.Next(1, 3) == 1)
+                if (rnd.Next(1, 3) == 1) // apenas para simular erros
                     throw new HttpRequestException();
 
                 var result = await client.GetAsync($"/users/{username}");
