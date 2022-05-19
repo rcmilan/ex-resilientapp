@@ -1,31 +1,28 @@
-﻿using App.Models;
+﻿using App.Helpers;
+using App.Models;
 using Polly;
 using Polly.Retry;
 using System.Net;
-using System.Text.Json;
 
 namespace App.Services
 {
-    public interface IGithubService
-    {
-        Task<User> Get(string username);
-    }
-
     public class GithubService : IGithubService
     {
+        private static readonly Random rnd = new();
+
         private readonly IHttpClientFactory _httpClientFactory;
 
-        private readonly AsyncRetryPolicy<User> _retryPolicy;
-
-        private static readonly Random rnd = new Random();
+        private readonly AsyncRetryPolicy _retryPolicy;
 
         public GithubService(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _retryPolicy = Policy<User>.Handle<HttpRequestException>().RetryAsync(retryCount: 3);
+            _retryPolicy = Policy
+                .Handle<HttpRequestException>(exception => exception.Message != "fake message!")
+                .WaitAndRetryAsync(retryCount: 3, attempts => TimeSpan.FromSeconds(1 * attempts));
         }
 
-        public async Task<User> Get(string username)
+        public async Task<User> GetUser(string username)
         {
             var client = _httpClientFactory.CreateClient("GitHub");
 
@@ -38,9 +35,24 @@ namespace App.Services
                 if (result.StatusCode == HttpStatusCode.NotFound)
                     return null;
 
-                var resultString = await result.Content.ReadAsStringAsync();
+                return result.DeserializeContent<User>();
+            });
+        }
 
-                return JsonSerializer.Deserialize<User>(resultString);
+        public async Task<List<User>> GetUsers(string orgName)
+        {
+            var client = _httpClientFactory.CreateClient("GitHub");
+
+            return await _retryPolicy.ExecuteAsync(async () =>
+            {
+                if (rnd.Next(1, 3) == 1) // apenas para simular erros
+                    throw new HttpRequestException("fake message!");
+
+                var result = await client.GetAsync($"/orgs/{orgName}");
+                if (result.StatusCode == HttpStatusCode.NotFound)
+                    return null;
+
+                return result.DeserializeContent<List<User>>();
             });
         }
     }

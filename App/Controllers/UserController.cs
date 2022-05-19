@@ -15,12 +15,20 @@ namespace App.Controllers
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<IActionResult>Get(string username)
+        [HttpGet("users/{username}")]
+        public async Task<IActionResult>GetUser(string username)
         {
-            var user = await _service.Get(username);
+            var user = await _service.GetUser(username);
 
-            return Ok(user);
+            return user != null ? Ok(user) : NotFound(username);
+        }
+
+        [HttpGet("orgs/{orgName}")]
+        public async Task<IActionResult> GetUsers(string orgName)
+        {
+            var users = await _service.GetUsers(orgName);
+
+            return users != null ? Ok(users) : NotFound(orgName);
         }
     }
 }
